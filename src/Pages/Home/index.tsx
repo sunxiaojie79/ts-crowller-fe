@@ -3,12 +3,32 @@ import { Redirect } from 'react-router-dom';
 import { Button, message } from 'antd';
 import ReactEcharts from 'echarts-for-react';
 import axios from 'axios';
+import moment from 'moment';
 import './home.css';
 
+interface State {
+  isLogin: boolean,
+  loaded: boolean,
+  data: {
+    [key: string]: BookItem[]
+  }
+}
+
+interface BookItem {
+  title: string,
+  price: number
+}
+
+interface LineData {
+  name: string,
+  type: string,
+  data: number[]
+}
 class Home extends Component {
-  state = {
+  state: State = {
     isLogin: true,
-    loaded: false
+    loaded: false,
+    data: {}
   };
 
   componentDidMount() {
@@ -24,6 +44,7 @@ class Home extends Component {
         });
       }
     });
+    this.handleShowCrowllerData();
   }
 
   handleLogout = () => {
@@ -49,16 +70,53 @@ class Home extends Component {
     })
   }
 
+  handleShowCrowllerData = () => {
+    axios.get('/api/showData').then(res => {
+      if (res.data?.data) {
+        this.setState({
+          data: res.data.data
+        });
+      } else {
+        message.error('展示失败');
+      }
+    })
+  }
+
   getOption: () => echarts.EChartOption = () => {
+    const { data } = this.state;
+    const bookList: string[] = [];
+    const times: string[] = [];
+    const tempData: {
+      [key:string]: number[];
+    } = {};
+    const result: LineData[] = [];
+    for (let i in data) {
+      times.push(moment(Number(i)).format('MM-DD HH:mm'))
+      const item = data[i];
+      item.forEach(ele => {
+        const { title, price } = ele;
+        if (bookList.indexOf(title) === -1) {
+          bookList.push(title);
+        }
+        tempData[title] ? tempData[title].push(price) : (tempData[title] = [price]);
+      });
+    }
+    for (let i in tempData) {
+      result.push({
+        name: i,
+        type: 'line',
+        data: tempData[i]
+      })
+    }
     return {
       title: {
-          text: '折线图堆叠'
+          text: '书单价格'
       },
       tooltip: {
           trigger: 'axis'
       },
       legend: {
-          data: ['邮件营销', '联盟广告', '视频广告', '直接访问', '搜索引擎']
+          data: bookList
       },
       grid: {
           left: '3%',
@@ -66,51 +124,15 @@ class Home extends Component {
           bottom: '3%',
           containLabel: true
       },
-      toolbox: {
-          feature: {
-              saveAsImage: {}
-          }
-      },
       xAxis: {
           type: 'category',
           boundaryGap: false,
-          data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+          data: times
       },
       yAxis: {
           type: 'value'
       },
-      series: [
-          {
-              name: '邮件营销',
-              type: 'line',
-              stack: '总量',
-              data: [120, 132, 101, 134, 90, 230, 210]
-          },
-          {
-              name: '联盟广告',
-              type: 'line',
-              stack: '总量',
-              data: [220, 182, 191, 234, 290, 330, 310]
-          },
-          {
-              name: '视频广告',
-              type: 'line',
-              stack: '总量',
-              data: [150, 232, 201, 154, 190, 330, 410]
-          },
-          {
-              name: '直接访问',
-              type: 'line',
-              stack: '总量',
-              data: [320, 332, 301, 334, 390, 330, 320]
-          },
-          {
-              name: '搜索引擎',
-              type: 'line',
-              stack: '总量',
-              data: [820, 932, 901, 934, 1290, 1330, 1320]
-          }
-      ]
+      series: result
     };  
   }
   render() {
