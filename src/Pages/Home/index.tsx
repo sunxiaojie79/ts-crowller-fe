@@ -2,16 +2,14 @@ import React, { Component } from 'react';
 import { Redirect } from 'react-router-dom';
 import { Button, message } from 'antd';
 import ReactEcharts from 'echarts-for-react';
-import axios from 'axios';
 import moment from 'moment';
 import './home.css';
+import request from '../../request';
 
 interface State {
   isLogin: boolean,
   loaded: boolean,
-  data: {
-    [key: string]: BookItem[]
-  }
+  data: DataStructure
 }
 
 interface BookItem {
@@ -19,11 +17,10 @@ interface BookItem {
   price: number
 }
 
-interface LineData {
-  name: string,
-  type: string,
-  data: number[]
+interface DataStructure {
+  [key: string]: BookItem[];
 }
+
 class Home extends Component {
   state: State = {
     isLogin: true,
@@ -32,8 +29,9 @@ class Home extends Component {
   };
 
   componentDidMount() {
-    axios.get('/api/isLogin').then(res => {
-      if (!res.data?.data) {
+    request.get('/api/isLogin').then(res => {
+      const data: boolean = res.data;
+      if (!data) {
         this.setState({
           isLogin: false,
           loaded: true
@@ -48,8 +46,9 @@ class Home extends Component {
   }
 
   handleLogout = () => {
-    axios.get('/api/logout').then(res => {
-      if (res.data?.data) {
+    request.get('/api/logout').then(res => {
+      const data: boolean = res.data;
+      if (data) {
         this.setState({
           isLogin: false,
           loaded: false
@@ -61,8 +60,9 @@ class Home extends Component {
   }
 
   handleGetCrowllerData = () => {
-    axios.get('/api/getData').then(res => {
-      if (res.data?.data) {
+    request.get('/api/getData').then(res => {
+      const data: boolean = res.data;
+      if (data) {
         message.success('获取成功');
       } else {
         message.error('获取失败');
@@ -71,10 +71,11 @@ class Home extends Component {
   }
 
   handleShowCrowllerData = () => {
-    axios.get('/api/showData').then(res => {
-      if (res.data?.data) {
+    request.get('/api/showData').then(res => {
+      const data: DataStructure = res.data;
+      if (data) {
         this.setState({
-          data: res.data.data
+          data
         });
       } else {
         message.error('展示失败');
@@ -89,7 +90,7 @@ class Home extends Component {
     const tempData: {
       [key:string]: number[];
     } = {};
-    const result: LineData[] = [];
+    const result: echarts.EChartOption.Series[] = [];
     for (let i in data) {
       times.push(moment(Number(i)).format('MM-DD HH:mm'))
       const item = data[i];

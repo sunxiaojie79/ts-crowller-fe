@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import qs from 'qs';
 import { Form, Input, Button, message } from 'antd';
 import { LockOutlined } from '@ant-design/icons';
 import './login.css'; 
 import { Redirect } from 'react-router-dom';
+import request from '../../request';
 
 const LoginForm : React.FC = () => {
   const [isLogin, setIsLogin] = useState(false)
   const onFinish = (values: any) => {
     console.log('Received values of form: ', values);
-    axios.post(
+    request.post(
       '/api/login',
       qs.stringify({password: values.password}),
       {
@@ -19,8 +19,8 @@ const LoginForm : React.FC = () => {
         }
       }
     ).then(res => {
-      console.log(res)
-      if (res.data?.data) {
+      const data: boolean = res.data;
+      if (data) {
         setIsLogin(true);
       } else {
         message.error('登录失败');
